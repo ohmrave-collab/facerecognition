@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+  <script>
+    // ฟังก์ชันตรวจสอบความพร้อมของ Library
+    function isFaceApiReady() {
+      return typeof faceapi !== 'undefined';
+    }
+  </script>
+</head>
+<body>
+  <h2>ระบบสแกนใบหน้าเข้างาน</h2>
+  <div id="container">
+    <video id="video" width="640" height="480" autoplay muted playsinline></video>
+  </div>
+  <div id="status-box" class="status">กำลังรอโหลด AI...</div>
+
+  <script>
+    const statusBox = document.getElementById('status-box');
+    const video = document.getElementById('video');
+    const MODEL_URL = 'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights/';
+
+    async function init() {
+      // ป้องกัน Error: faceapi is not defined
+      if (typeof faceapi === 'undefined') {
+        console.log("Waiting for faceapi...");
+        setTimeout(init, 500); // รออีก 0.5 วิแล้วเช็คใหม่
+        return;
+      }
+      
+      try {
+        statusBox.innerText = "กำลังโหลด Models...";
+        await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+        await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+        await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+        
+        startVideo();
+      } catch (e) {
+        statusBox.innerText = "โหลด Model ไม่สำเร็จ: " + e.message;
+      }
+    }
+
+    function startVideo() {
+      navigator.mediaDevices.getUserMedia({ video: {} })
+        .then(stream => {
+          video.srcObject = stream;
+          statusBox.innerText = "กล้องพร้อมทำงานแล้ว!";
+        })
+        .catch(err => {
+          // ถ้ายังติด Permission Denied จะมาโชว์ที่นี่
+          statusBox.innerHTML = "<b style='color:red'>กล้องถูกบล็อก!</b><br>กรุณากดที่รูปกุญแจข้างชื่อเว็บ แล้วเลือก Allow Camera จากนั้นรีเฟรชหน้าจอ";
+        });
+    }
+
+    // เริ่มทำงานเมื่อหน้าเว็บโหลดเสร็จ
+    window.onload = init;
+  </script>
+</body>
+</html>
